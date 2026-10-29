@@ -1,75 +1,105 @@
 "use client";
 import { useState } from "react";
-import { PinIcon, HeartIcon, StarIcon } from "./Icons";
+import { PinIcon, HeartIcon, StarIcon, CheckIcon, ExternalIcon } from "./Icons";
+import { money, fmtDate } from "../lib/search";
 
-const money = (n, c) => {
-  if (n == null) return "–";
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: c || "USD", maximumFractionDigits: 0 }).format(n);
-  } catch {
-    return `${Math.round(n)} ${c || ""}`;
-  }
-};
-const safe = (u) => (/^https:\/\//.test(u || "") ? u : "#");
+const safe = (u) => (/^https:\/\//.test(u || "") ? u : null);
 
+// Premium photographic card. Every field is optional: anything the API didn't return is simply hidden.
 export default function HotelCard({ p, fallbackCurrency, nights, isFav, onToggleFav }) {
   const [imgFailed, setImgFailed] = useState(false);
   const room = p.available_rooms?.[0] || {};
-  const cur = p.currency || fallbackCurrency;
+  const cur = p.currency || room.currency || fallbackCurrency;
+  const bookHref = safe(room.checkout_url) || safe(p.booking_url);
+  const detailsHref = safe(p.booking_url) || safe(p.url);
+  const place = p.display_location || p.city;
+  const hasImage = p.thumbnail && !imgFailed;
+  const cancelUntil = room.free_cancellation_until
+    ? fmtDate(room.free_cancellation_until.slice(0, 10), { month: "short", day: "numeric" })
+    : null;
+  const perNight = money(p.price_per_night, cur);
+  const total = money(p.total_price, cur);
+  const fees = p.excluded_taxes_and_fees ? money(p.excluded_taxes_and_fees, cur) : null;
 
   return (
     <article className="hotel">
-      <div className="thumb">
-        {p.thumbnail && !imgFailed ? (
+      <div className={`media${hasImage ? "" : " no-img"}`}>
+        {hasImage && (
+          // Plain <img>: works in the static Capacitor export without extra Next.js image config.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.thumbnail} alt={`Photo of ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
-        ) : (
-          <div className="thumb-fallback" aria-hidden="true">🏨</div>
+          <img src={p.thumbnail} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)} />
         )}
-        {p.has_free_cancellation && <span className="deal">Free cancellation</span>}
-      </div>
+        <div className="scrim" aria-hidden="true" />
 
-      <button type="button" className="heart" aria-pressed={isFav} aria-label={isFav ? `Remove ${p.name} from saved` : `Save ${p.name}`}
-        onClick={() => onToggleFav(p.property_id)}>
-        <HeartIcon filled={isFav} width={18} height={18} />
-      </button>
+        {p.has_free_cancellation && (
+          <span className="media-tag"><CheckIcon width={14} height={14} /> Free cancellation</span>
+        )}
+        <button type="button" className="heart" aria-pressed={isFav}
+          aria-label={isFav ? `Remove ${p.name} from saved` : `Save ${p.name}`}
+          onClick={() => onToggleFav(p)}>
+          <HeartIcon width={20} height={20} filled={isFav} />
+        </button>
 
-      <div className="info">
-        <h2>{p.name}</h2>
-        <div className="rating-row">
-          {p.star_rating ? (
-            <span className="stars" aria-label={`${p.star_rating} stars`}>
-              {Array.from({ length: p.star_rating }, (_, i) => <StarIcon key={i} width={12} height={12} />)}
-            </span>
-          ) : null}
-          {p.rating_score != null && (
-            <>
-              <span className="score">{p.rating_score}</span>
-              <span className="small">{p.rating_text}{p.reviews_count ? ` · ${p.reviews_count.toLocaleString()}` : ""}</span>
-            </>
+        <div className="media-text">
+          <h3>{p.name}</h3>
+          {(place || p.distance_from_center) && (
+            <p><PinIcon width={14} height={14} /> {[place, p.distance_from_center].filter(Boolean).join(" · ")}</p>
           )}
         </div>
-        <div className="loc small">
-          <PinIcon width={14} height={14} />
-          {p.distance_from_center || p.display_location || p.city}
-        </div>
-        {room.name && <div className="small room">{room.name}{room.bed_type ? ` · ${room.bed_type}` : ""}</div>}
-        {p.no_prepayment && <div className="ok small">No prepayment needed</div>}
+      </div>
 
-        <div className="price-row">
-          <div>
-            <span className="price">{money(p.price_per_night, cur)}</span>
-            <span className="small"> /night</span>
-            <div className="small">
-              {money(p.total_price, cur)} total{nights ? ` · ${nights} night${nights === 1 ? "" : "s"}` : ""}
-            </div>
-            {p.excluded_taxes_and_fees ? (
-              <div className="small">+ {money(p.excluded_taxes_and_fees, cur)} taxes &amp; fees</div>
+      <div className="hotel-body">
+        {(p.rating_score != null || p.star_rating) && (
+          <div className="rating-row">
+            {p.rating_score != null && <span className="score">{p.rating_score}</span>}
+            {p.rating_score != null && (
+              <span className="rating-text">
+                {p.rating_text}{p.reviews_count ? <span className="muted"> · {p.reviews_count.toLocaleString()} reviews</span> : null}
+              </span>
+            )}
+            {p.star_rating ? (
+              <span className="stars" role="img" aria-label={`${p.star_rating}-star hotel`}>
+                {Array.from({ length: p.star_rating }, (_, i) => <StarIcon key={i} width={13} height={13} />)}
+              </span>
             ) : null}
           </div>
-          <a className="btn-sm" target="_blank" rel="noopener noreferrer" href={safe(room.checkout_url || p.booking_url)}>
-            {p.is_sold_out ? "View" : "Book now"}
-          </a>
+        )}
+
+        {(room.name || room.bed_type) && (
+          <p className="room">{[room.name, room.bed_type].filter(Boolean).join(" · ")}</p>
+        )}
+
+        {(p.no_prepayment || cancelUntil || p.is_sold_out) && (
+          <div className="tags">
+            {p.is_sold_out && <span className="tag warn">Sold out for these dates</span>}
+            {p.has_free_cancellation && cancelUntil && <span className="tag ok">Cancel free until {cancelUntil}</span>}
+            {p.no_prepayment && <span className="tag">No prepayment</span>}
+          </div>
+        )}
+
+        <div className="price-row">
+          <div className="price-block">
+            {perNight && <div><span className="price">{perNight}</span><span className="muted"> / night</span></div>}
+            {total && (
+              <div className="muted small">
+                {total} total{nights ? ` · ${nights} night${nights === 1 ? "" : "s"}` : ""}
+              </div>
+            )}
+            {fees && <div className="muted small">+ {fees} taxes &amp; fees</div>}
+          </div>
+          <div className="card-actions">
+            {bookHref && (
+              <a className="btn btn-primary" href={bookHref} target="_blank" rel="noopener noreferrer">
+                {p.is_sold_out ? "View" : "Book now"}
+              </a>
+            )}
+            {detailsHref && detailsHref !== bookHref && (
+              <a className="link-sm" href={detailsHref} target="_blank" rel="noopener noreferrer">
+                Details <ExternalIcon width={13} height={13} />
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </article>

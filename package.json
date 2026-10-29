@@ -10,6 +10,7 @@
     "cap:sync": "npm run build:cap && npx cap sync"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
     "@capacitor/cli": "^8.6.0",
     "@capacitor/core": "^8.6.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
