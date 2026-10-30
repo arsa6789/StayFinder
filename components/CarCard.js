@@ -2,23 +2,18 @@
 import { useState } from "react";
 import { CarIcon, PinIcon, HeartIcon, CheckIcon, GearIcon, UsersIcon, SuitcaseIcon } from "./Icons";
 import { money, fmtDate, plural } from "../lib/search";
+import { getCarBookingUrl } from "../lib/cars";
 import { openExternal } from "../lib/external";
-
-const safe = (u) => (/^https:\/\//.test(u || "") ? u : null);
 
 // Rental car card. Every field is optional: anything the API didn't return is
 // simply hidden, so a thin response still renders cleanly.
 export default function CarCard({ p, meta, isFav, onToggleFav }) {
   const [imgFailed, setImgFailed] = useState(false);
   const cur = p.currency || meta?.currency;
-  // Rentalcars' booking_url is a *signed* deal token: its base64 payload carries a
-  // cryptographic `signature` bound to the session that created it, so it is
-  // rejected for every other visitor ("OOPS — this page doesn't exist").
-  // search_metadata.search_url is the identical search expressed as a fully
-  // public, unsigned URL (plain query params: location, dates, times, driver age,
-  // currency), so it always resolves. Prefer the direct deal page (exact product)
-  // and only fall back to the search page when no deal link is available.
-  const bookHref = safe(p.booking_url) || safe(meta?.search_url);
+  // Do not use p.booking_url: it is a session-bound signed offer link and fails
+  // for other visitors. The public search URL is valid and keeps the user's
+  // location, dates, times, driver age and currency.
+  const bookHref = getCarBookingUrl(p, meta?.search_url);
   const hasImage = p.image_url && !imgFailed;
   const title = p.vehicle_name || p.vehicle_category || "Rental car";
   const place = [p.vehicle_category, p.supplier_name].filter(Boolean).join(" · ");
@@ -69,7 +64,7 @@ export default function CarCard({ p, meta, isFav, onToggleFav }) {
         )}
         <button type="button" className="heart" aria-pressed={isFav}
           aria-label={isFav ? `Remove ${title} from saved` : `Save ${title}`}
-          onClick={() => onToggleFav(p)}>
+          onClick={() => onToggleFav(p, meta?.search_url)}>
           <HeartIcon width={20} height={20} filled={isFav} />
         </button>
 
@@ -128,6 +123,7 @@ export default function CarCard({ p, meta, isFav, onToggleFav }) {
                 Book now
               </a>
             )}
+            {!bookHref && <span className="muted small">Search again for a fresh booking link.</span>}
           </div>
         </div>
       </div>

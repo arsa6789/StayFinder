@@ -15,7 +15,7 @@ import {
   DEFAULT_FORM, POPULAR, addDays, today, validate, buildPayload, activeFilterCount, fmtDate, plural, money,
 } from "../lib/search";
 import {
-  DEFAULT_CAR_FORM, CARS_POPULAR, validateCar, buildCarPayload, activeCarFilterCount, carId,
+  DEFAULT_CAR_FORM, CARS_POPULAR, validateCar, buildCarPayload, activeCarFilterCount, carId, getCarBookingUrl,
 } from "../lib/cars";
 
 // Empty on Vercel (same origin). For the Capacitor app it is your deployed Vercel URL.
@@ -173,12 +173,14 @@ export default function Home() {
     });
   }
 
-  function toggleSavedCar(car) {
+  function toggleSavedCar(car, searchUrl) {
     const id = carId(car);
     if (!id) return; // nothing stable to key it by
     setSavedCars((prev) => {
       const exists = prev.some((c) => carId(c) === id);
-      const next = exists ? prev.filter((c) => carId(c) !== id) : [car, ...prev];
+      const bookingUrl = getCarBookingUrl(car, searchUrl);
+      const savedCar = bookingUrl ? { ...car, rental_search_url: bookingUrl } : car;
+      const next = exists ? prev.filter((c) => carId(c) !== id) : [savedCar, ...prev];
       try { localStorage.setItem(SAVED_CARS_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
