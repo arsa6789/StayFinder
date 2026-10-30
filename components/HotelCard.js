@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { PinIcon, HeartIcon, StarIcon, CheckIcon, ExternalIcon } from "./Icons";
 import { money, fmtDate } from "../lib/search";
+import { openExternal } from "../lib/external";
 
 const safe = (u) => (/^https:\/\//.test(u || "") ? u : null);
 
@@ -90,12 +91,14 @@ export default function HotelCard({ p, fallbackCurrency, nights, isFav, onToggle
           </div>
           <div className="card-actions">
             {bookHref && (
-              <a className="btn btn-primary" href={bookHref} target="_blank" rel="noopener noreferrer">
+              <a className="btn btn-primary" href={bookHref} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => openExternal(e, bookHref)}>
                 {p.is_sold_out ? "View" : "Book now"}
               </a>
             )}
             {detailsHref && detailsHref !== bookHref && (
-              <a className="link-sm" href={detailsHref} target="_blank" rel="noopener noreferrer">
+              <a className="link-sm" href={detailsHref} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => openExternal(e, detailsHref)}>
                 Details <ExternalIcon width={13} height={13} />
               </a>
             )}

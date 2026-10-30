@@ -265,7 +265,41 @@ a { color: inherit; }
 .sk { background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
 .sk-line { height: 16px; border-radius: 8px; }
 .sk-pill { width: 112px; height: 48px; border-radius: 999px; }
+.sk-tag { width: 88px; height: 28px; border-radius: 999px; }
 .hotel .media.sk { border-radius: 0; }
+
+/* ---------- Category switch (Hotels / Car rentals) ---------- */
+.mode-switch {
+  display: inline-flex; gap: 4px; padding: 4px; margin-bottom: var(--s2);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow-sm);
+}
+.mode-opt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--muted); font-weight: 700; font-size: 0.95rem;
+  transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.mode-opt[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.mode-opt:active { transform: scale(0.97); }
+.mode-opt svg { flex: none; }
+
+/* ---------- Car rental card ---------- */
+.media-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255, 255, 255, 0.8); }
+.meta-line { display: flex; align-items: flex-start; gap: 6px; font-size: 0.88rem; color: var(--muted); }
+.meta-line svg { flex: none; margin-top: 3px; color: var(--accent); }
+.meta-line span { overflow-wrap: anywhere; }
+.car-note { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tags .tag { display: inline-flex; align-items: center; gap: 6px; }
+.age-input {
+  width: 104px; min-height: 44px; padding: 0 12px; text-align: center;
+  font-size: 16px; font-weight: 700; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.age-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- Saved: stays + cars sections ---------- */
+.saved-group + .saved-group { margin-top: var(--s3); }
+.section-title { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: var(--s1); }
 
 /* raw response (kept, but unobtrusive) */
 .raw { margin-top: var(--s3); color: var(--muted); font-size: 0.85rem; }
